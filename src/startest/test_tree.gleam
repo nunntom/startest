@@ -1,7 +1,7 @@
-import gleam/dynamic.{type DecodeError, type Dynamic} as dyn
+import gleam/dynamic/decode.{type Decoder} as dec
 import gleam/list
 import gleam/string
-import startest/test_case.{type Test, decode_test}
+import startest/test_case.{type Test, test_decoder}
 
 pub type TestTree {
   Suite(name: String, suite: List(TestTree))
@@ -33,27 +33,33 @@ fn collect_all_tests(
 }
 
 @target(erlang)
-pub fn decode_test_tree(value: Dynamic) -> Result(TestTree, List(DecodeError)) {
-  value
-  |> dyn.any([
-    dyn.decode2(
-      Suite,
-      dyn.element(1, dyn.string),
-      dyn.element(2, dyn.list(decode_test_tree)),
-    ),
-    dyn.decode1(Test, dyn.element(1, decode_test)),
-  ])
+pub fn test_tree_decoder() -> Decoder(TestTree) {
+  dec.one_of(
+    {
+      use name <- dec.then(dec.at([1], dec.string))
+      use suite <- dec.then(dec.at([2], dec.list(test_tree_decoder())))
+      dec.success(Suite(name, suite))
+    },
+    [
+      dec.at([1], test_decoder())
+      |> dec.map(Test),
+    ],
+  )
 }
 
 @target(javascript)
-pub fn decode_test_tree(value: Dynamic) -> Result(TestTree, List(DecodeError)) {
-  value
-  |> dyn.any([
-    dyn.decode2(
-      Suite,
-      dyn.field("name", dyn.string),
-      dyn.field("suite", dyn.list(decode_test_tree)),
-    ),
-    dyn.decode1(Test, dyn.field("0", decode_test)),
-  ])
+pub fn test_tree_decoder() -> Decoder(TestTree) {
+  dec.one_of(
+    {
+      use name <- dec.field("name", dec.string)
+      use suite <- dec.field("suite", dec.list(test_tree_decoder()))
+      dec.success(Suite(name, suite))
+    },
+    [
+      {
+        use test_ <- dec.field("0", test_decoder())
+        dec.success(Test(test_))
+      },
+    ],
+  )
 }

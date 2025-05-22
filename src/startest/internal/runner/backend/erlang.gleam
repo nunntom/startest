@@ -1,7 +1,7 @@
 //// The test runner implementation specific to the Erlang target.
 
 @target(erlang)
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Dynamic}
 @target(erlang)
 import gleam/list
 @target(erlang)

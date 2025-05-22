@@ -1,4 +1,4 @@
-import gleam/dynamic.{type DecodeError, type Dynamic} as dyn
+import gleam/dynamic/decode.{type Decoder} as dec
 import startest/internal/unsafe
 import startest/test_failure.{type TestFailure}
 
@@ -23,28 +23,23 @@ pub type ExecutedTest {
 }
 
 @target(erlang)
-pub fn decode_test(value: Dynamic) -> Result(Test, List(DecodeError)) {
-  value
-  |> dyn.decode3(
-    Test,
-    dyn.element(1, dyn.string),
-    dyn.element(2, decode_test_body),
-    dyn.element(3, dyn.bool),
-  )
+pub fn test_decoder() -> Decoder(Test) {
+  use name <- dec.then(dec.at([1], dec.string))
+  use body <- dec.then(dec.at([2], test_body_decoder()))
+  use skipped <- dec.then(dec.at([3], dec.bool))
+  dec.success(Test(name, body, skipped))
 }
 
 @target(javascript)
-pub fn decode_test(value: Dynamic) -> Result(Test, List(DecodeError)) {
-  value
-  |> dyn.decode3(
-    Test,
-    dyn.field("name", dyn.string),
-    dyn.field("body", decode_test_body),
-    dyn.field("skipped", dyn.bool),
-  )
+pub fn test_decoder() -> Decoder(Test) {
+  use name <- dec.field("name", dec.string)
+  use body <- dec.field("body", test_body_decoder())
+  use skipped <- dec.field("skipped", dec.bool)
+  dec.success(Test(name, body, skipped))
 }
 
-fn decode_test_body(value: Dynamic) -> Result(TestBody, List(DecodeError)) {
+fn test_body_decoder() -> Decoder(TestBody) {
+  use value <- dec.then(dec.dynamic)
   let function: TestBody = unsafe.coerce(value)
-  Ok(function)
+  dec.success(function)
 }

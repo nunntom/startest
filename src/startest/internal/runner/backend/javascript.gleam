@@ -1,7 +1,7 @@
 //// The test runner implementation specific to the JavaScript target.
 
 @target(javascript)
-import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode.{type Dynamic}
 @target(javascript)
 import gleam/javascript/array.{type Array}
 @target(javascript)
